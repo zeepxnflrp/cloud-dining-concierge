@@ -8,18 +8,9 @@ load_dotenv()
 API_KEY = os.getenv("YELP_API_KEY")
 URL = "https://api.yelp.com/v3/businesses/search"
 
-HEADERS = {
-    "Authorization": f"Bearer {API_KEY}"
-}
+HEADERS = {"Authorization": f"Bearer {API_KEY}"}
 
-CUISINES = [
-    "chinese",
-    "italian",
-    "japanese",
-    "mexican",
-    "indian",
-    "thai"
-]
+CUISINES = ["chinese","italian","japanese","mexican","indian","thai"]
 
 seen_ids = set()
 restaurants = []
@@ -72,7 +63,7 @@ for cuisine in CUISINES:
 
         print(f"{cuisine}: {cuisine_count} unique so far")
 
-print("\nDone!")
+print("\nDone!!!")
 print(f"Total unique restaurants: {len(restaurants)}")
 
 with open("other-scripts/restaurants.json", "w") as f:

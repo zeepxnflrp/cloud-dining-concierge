@@ -44,7 +44,7 @@ with table.batch_writer() as batch:
 
         batch.put_item(Item=restaurant)
 
-        if index % 100 == 0:
+        if index % 200 == 0:
             print(f"Inserted {index} restaurants")
 
 print(f"Done! Inserted {len(restaurants)} restaurants.")
