@@ -12,11 +12,14 @@ SQS_QUEUE_URL = os.getenv("SQS_QUEUE_URL")
 OPENSEARCH_ENDPOINT = os.getenv("OPENSEARCH_ENDPOINT")
 OPENSEARCH_USERNAME = os.getenv("OPENSEARCH_USERNAME")
 OPENSEARCH_PASSWORD = os.getenv("OPENSEARCH_PASSWORD")
+SES_SENDER_EMAIL = os.getenv("SES_SENDER_EMAIL")
 
 DYNAMODB_TABLE = "yelp-restaurants"
 
 sqs = boto3.client("sqs")
 dynamodb = boto3.resource("dynamodb")
+ses = boto3.client("ses", region_name="us-east-1")
+
 table = dynamodb.Table(DYNAMODB_TABLE)
 
 
@@ -85,6 +88,57 @@ def get_restaurant_details(restaurant_ids):
     return restaurants
 
 
+def format_email(body, restaurants):
+    lines = [
+        "Hi! :)",
+        "",
+        f"Here are your {body['cuisine'].title()} restaurant suggestions "
+        f"for {body['numberOfPeople']} people on "
+        f"{body['diningDate']} at {body['diningTime']}:",
+        ""
+    ]
+
+    for i, restaurant in enumerate(restaurants, start=1):
+        lines.extend([
+            f"{i}. {restaurant['Name']}",
+            f"Address: {restaurant['Address']}",
+            f"Rating: {restaurant['Rating']} "
+            f"({restaurant['NumberOfReviews']:,} Reviews)",
+            ""
+        ])
+
+    lines.append("Enjoy your meal! Remember to contact us again for recommendations. :D")
+
+    return "\n".join(lines)
+
+
+def send_email(recipient, email_body):
+    response = ses.send_email(
+        Source=SES_SENDER_EMAIL,
+        Destination={
+            "ToAddresses": [recipient]
+        },
+        Message={
+            "Subject": {
+                "Data": "Your Personal Dining Concierge Recommendations <3"
+            },
+            "Body": {
+                "Text": {
+                    "Data": email_body
+                }
+            }
+        }
+    )
+
+    return response
+
+def delete_sqs_message(receipt_handle):
+    sqs.delete_message(
+        QueueUrl=SQS_QUEUE_URL,
+        ReceiptHandle=receipt_handle
+    )
+
+
 def main():
     message = get_sqs_message()
 
@@ -96,7 +150,7 @@ def main():
     print("Received request:")
     print(json.dumps(body, indent=2))
 
-    cuisine = body["cuisine"]
+    cuisine = body["cuisine"].lower()
 
     restaurant_ids = search_opensearch(cuisine)
 
@@ -111,6 +165,10 @@ def main():
 
     restaurants = get_restaurant_details(chosen_ids)
 
+    if not restaurants:
+        print("No restaurant details found in DynamoDB.")
+        return
+
     print("\nRecommendations:")
 
     for restaurant in restaurants:
@@ -120,6 +178,21 @@ def main():
             f"Rating: {restaurant['Rating']} "
             f"({restaurant['NumberOfReviews']:,} Reviews)"
         )
+
+    email_body = format_email(body, restaurants)
+
+    print("\nEmail preview:\n")
+    print(email_body)
+
+    send_email(
+        body["email"],
+        email_body
+    )
+
+    print("\nEmail sent successfully!")
+
+    delete_sqs_message(message["ReceiptHandle"])
+    print("SQS message deleted successfully!")
 
 
 if __name__ == "__main__":
