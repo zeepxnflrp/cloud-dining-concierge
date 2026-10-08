@@ -194,6 +194,13 @@ def main():
     delete_sqs_message(message["ReceiptHandle"])
     print("SQS message deleted successfully!")
 
+def lambda_handler(event, context):
+    main()
+
+    return {
+        "statusCode": 200,
+        "body": "LF2 completed"
+    }
 
 if __name__ == "__main__":
     main()
