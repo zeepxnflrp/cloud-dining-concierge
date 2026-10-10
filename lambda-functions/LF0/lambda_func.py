@@ -28,8 +28,6 @@ def lambda_handler(event, context):
 
         user_message = messages[0]["unstructured"]["text"]
 
-        # Reuse the same session ID across conversation turns.
-        # The frontend should send this header on every request.
         request_headers = event.get("headers") or {}
         session_id = next(
             (
