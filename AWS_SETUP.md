@@ -80,6 +80,8 @@ DiningSuggestionsIntent collects:
 - `NumberOfPeople`
 - `Email`
 
+**Location Validation:** The chatbot uses a custom `SupportedLocation` slot type that accepts Manhattan and supported New York City aliases. Unsupported cities such as Indore and New Delhi are rejected, and the bot prompts users to enter a supported location.
+
 The Lex V2 export ZIP is included in this repository.
 
 ## 5. SQS Message Format
